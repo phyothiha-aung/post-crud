@@ -16,7 +16,13 @@ export default defineConfig({
     setupFiles: "tests/setup.ts",
     // DB-backed tests share one database, so run test files one at a time.
     fileParallelism: false,
-    exclude: [...configDefaults.exclude, "src/**/*.d.ts"],
+    // e2e/ holds Playwright specs; they run with `npm run e2e`, not Vitest.
+    exclude: [
+      ...configDefaults.exclude,
+      "migrations/**",
+      "src/**/*.d.ts",
+      "e2e/**",
+    ],
 
     coverage: {
       provider: "v8",

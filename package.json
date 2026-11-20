@@ -20,7 +20,12 @@
     "db:verify": "prisma db verify",
     "db:test:init": "DOTENV_CONFIG_PATH=.env.test prisma db init",
     "db:test:update": "DOTENV_CONFIG_PATH=.env.test prisma db update",
-    "db:test:verify": "DOTENV_CONFIG_PATH=.env.test prisma db verify"
+    "db:test:verify": "DOTENV_CONFIG_PATH=.env.test prisma db verify",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report",
+    "db:e2e:init": "DOTENV_CONFIG_PATH=.env.e2e prisma db init",
+    "db:e2e:update": "DOTENV_CONFIG_PATH=.env.e2e prisma db update"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.24",
@@ -30,6 +35,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@prisma/cli-engine": "^0.10.0",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/dom": "^10.4.2",
