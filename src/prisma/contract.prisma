@@ -1,0 +1,11 @@
+// use prisma-8
+
+model Post {
+  id        Int                @id @default(autoincrement())
+  title     String
+  content   String?
+
+  createdAt DateTime           @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
+  @@map("posts")
+}
