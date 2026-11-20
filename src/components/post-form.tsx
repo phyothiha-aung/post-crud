@@ -26,12 +26,13 @@ export function PostForm({ post }: { post?: Post }) {
     setErrors({});
     const input = { title, content: content.trim() ? content : null };
     try {
-      const saved = post
-        ? await updatePost(post.id, input)
-        : await createPost(input);
-      // Next keeps visited routes alive (React <Activity>), so reset the
-      // form; otherwise "New post" would reopen with the old draft.
-      if (!post) {
+      let saved;
+      if (post) {
+        saved = await updatePost(post.id, input);
+      } else {
+        saved = await createPost(input);
+        // Next keeps visited routes alive (React <Activity>), so reset the
+        // form; otherwise "New post" would reopen with the old draft.
         setTitle("");
         setContent("");
       }

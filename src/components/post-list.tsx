@@ -26,12 +26,11 @@ export function PostList() {
   const [result, setResult] = useState<Result | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const navigate = (next: { page?: number; search?: string }) => {
+  const navigate = (next: { page: number; search?: string }) => {
     const qs = new URLSearchParams();
     const s = next.search ?? search;
-    const p = next.page ?? page;
     if (s) qs.set("search", s);
-    if (p > 1) qs.set("page", String(p));
+    if (next.page > 1) qs.set("page", String(next.page));
     router.replace(qs.size ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
