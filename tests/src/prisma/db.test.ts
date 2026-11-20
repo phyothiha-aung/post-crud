@@ -1,5 +1,4 @@
 import { db } from "@/prisma/db";
-import { describe, it, expect, afterAll } from "vitest";
 
 describe("Prisma Database Connection", () => {
   afterAll(async () => {

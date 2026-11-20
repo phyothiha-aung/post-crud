@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import dotenv from "dotenv";
 import path from "path";
 
@@ -14,5 +14,15 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: "tests/setup.ts",
+    // DB-backed tests share one database, so run test files one at a time.
+    fileParallelism: false,
+    exclude: [...configDefaults.exclude, "src/**/*.d.ts"],
+
+    coverage: {
+      provider: "v8",
+      enabled: true,
+      include: ["src/**/*.{js,jsx,ts,tsx}"],
+      exclude: ["src/**/*.d.ts", "src/prisma/contract.json"],
+    },
   },
 });
