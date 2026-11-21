@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { DELETE, GET, PATCH, PUT } from "@/app/api/posts/[id]/route";
 import { db } from "@/prisma/db";
 
-const ctx = (id: string | number) => ({
+const ctx = (id: string) => ({
   params: Promise.resolve({ id: String(id) }),
 });
 
@@ -19,22 +19,26 @@ const req = (method: string, body?: unknown) =>
           : JSON.stringify(body),
   });
 
-const INVALID_IDS = ["abc", "0", "-1", "1.5"];
+const INVALID_IDS = [
+  "abc",
+  "1",
+  "0190f3a8-7c4e-7d2a-9b1c-1234567890a", // one char short
+  "0190f3a8-7c4e-7d2a-9b1c-1234567890abz",
+];
 
 describe("/api/posts/[id]", () => {
-  let id: number;
-  let missingId: number;
+  let id: string;
+  const missingId = "0190f3a8-7c4e-7d2a-9b1c-000000000000";
 
   beforeEach(async () => {
-    await db.orm.public.Post.where((p) => p.id.gt(0)).deleteAll();
+    await db.orm.public.Post.where((p) => p.id.isNotNull()).deleteAll();
     ({ id } = await db.orm.public.Post.create({
       title: "Original",
       content: "Body",
     }));
-    missingId = id + 1000;
   });
   afterAll(async () => {
-    await db.orm.public.Post.where((p) => p.id.gt(0)).deleteAll();
+    await db.orm.public.Post.where((p) => p.id.isNotNull()).deleteAll();
     await db.close();
   });
 
@@ -59,6 +63,24 @@ describe("/api/posts/[id]", () => {
       const res = await GET(req("GET"), ctx(bad));
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ message: "Invalid post id" });
+    });
+  });
+
+  describe("soft-deleted posts", () => {
+    beforeEach(async () => {
+      await db.orm.public.Post.where({ id }).update({ deletedAt: new Date() });
+    });
+
+    it("are not found by GET, PATCH or PUT", async () => {
+      expect((await GET(req("GET"), ctx(id))).status).toBe(404);
+      expect((await PATCH(req("PATCH", { title: "x" }), ctx(id))).status).toBe(
+        404,
+      );
+      expect((await PUT(req("PUT", { title: "x" }), ctx(id))).status).toBe(404);
+    });
+
+    it("cannot be deleted twice", async () => {
+      expect((await DELETE(req("DELETE"), ctx(id))).status).toBe(404);
     });
   });
 
@@ -156,11 +178,23 @@ describe("/api/posts/[id]", () => {
   });
 
   describe("DELETE", () => {
-    it("removes the post and returns 204 with no body", async () => {
+    it("soft-deletes the post and returns 204 with no body", async () => {
+      const before = await db.orm.public.Post.first({ id });
       const res = await DELETE(req("DELETE"), ctx(id));
       expect(res.status).toBe(204);
       expect(await res.text()).toBe("");
-      expect(await db.orm.public.Post.first({ id })).toBeNull();
+
+      const row = await db.orm.public.Post.first({ id });
+      expect(row?.deletedAt).toBeInstanceOf(Date);
+      // updatedAt moves forward so sync clients pull the tombstone.
+      expect(row!.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        before!.updatedAt.getTime(),
+      );
+    });
+
+    it("accepts an upper-case id", async () => {
+      const res = await DELETE(req("DELETE"), ctx(id.toUpperCase()));
+      expect(res.status).toBe(204);
     });
 
     it("returns 404 for a missing post", async () => {

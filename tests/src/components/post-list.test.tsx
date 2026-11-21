@@ -267,7 +267,7 @@ describe("PostList", () => {
         within(items()[0]).getByRole("button", { name: "Delete" }),
       );
       await waitFor(() => expect(titles()).toEqual(["Post 1"]));
-      expect(store.posts.map((p) => p.id)).toEqual([1]);
+      expect(store.posts.map((p) => p.id)).toEqual(["1"]);
       expect(router.replace).not.toHaveBeenCalled();
     });
 

@@ -3,6 +3,9 @@ import { NextRequest } from "next/server";
 import { GET, POST } from "@/app/api/posts/route";
 import { db } from "@/prisma/db";
 
+const UUID_V7 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 const url = (qs = "") => `http://localhost/api/posts${qs}`;
 const post = (body: unknown) =>
   POST(
@@ -14,10 +17,10 @@ const post = (body: unknown) =>
 
 describe("/api/posts", () => {
   beforeEach(async () => {
-    await db.orm.public.Post.where((p) => p.id.gt(0)).deleteAll();
+    await db.orm.public.Post.where((p) => p.id.isNotNull()).deleteAll();
   });
   afterAll(async () => {
-    await db.orm.public.Post.where((p) => p.id.gt(0)).deleteAll();
+    await db.orm.public.Post.where((p) => p.id.isNotNull()).deleteAll();
     await db.close();
   });
 
@@ -27,7 +30,31 @@ describe("/api/posts", () => {
       expect(res.status).toBe(201);
       const { data } = await res.json();
       expect(data).toMatchObject({ title: "Hello", content: "World" });
-      expect(data.id).toBeTypeOf("number");
+      expect(data.id).toMatch(UUID_V7);
+      expect(data.deletedAt).toBeNull();
+    });
+
+    it("accepts a client-generated id", async () => {
+      const id = "0190f3a8-7c4e-7d2a-9b1c-1234567890ab";
+      const res = await post({ id, title: "Offline" });
+      expect(res.status).toBe(201);
+      expect((await res.json()).data.id).toBe(id);
+    });
+
+    it("returns 409 when the client id already exists", async () => {
+      const id = "0190f3a8-7c4e-7d2a-9b1c-1234567890ab";
+      await post({ id, title: "First" });
+      const res = await post({ id, title: "Second" });
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({
+        message: "A post with this id already exists",
+      });
+    });
+
+    it("rejects an id that is not a UUID", async () => {
+      const res = await post({ id: "123", title: "Bad id" });
+      expect(res.status).toBe(422);
+      expect((await res.json()).errors).toEqual({ id: "id must be a UUID" });
     });
 
     it("defaults content to null", async () => {
@@ -95,6 +122,14 @@ describe("/api/posts", () => {
     it("treats LIKE wildcards literally", async () => {
       expect((await get("?search=%25")).meta.total).toBe(1);
       expect((await get("?search=_")).meta.total).toBe(1);
+    });
+
+    it("hides soft-deleted posts", async () => {
+      await db.orm.public.Post.where({ title: "Learning React" }).update({
+        deletedAt: new Date(),
+      });
+      expect((await get()).meta.total).toBe(16);
+      expect((await get("?search=react")).meta.total).toBe(0);
     });
 
     it("combines search with pagination", async () => {

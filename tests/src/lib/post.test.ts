@@ -4,10 +4,14 @@ import {
   errorResponse,
   escapeLike,
   INVALID_JSON,
+  decodeCursor,
+  encodeCursor,
+  parseDate,
   parseId,
   parsePositiveInt,
   readJson,
   validatePostInput,
+  validatePushChange,
 } from "@/lib/post";
 
 describe("validatePostInput", () => {
@@ -156,29 +160,128 @@ describe("validatePostInput", () => {
   });
 });
 
+const ID = "0190f3a8-7c4e-7d2a-9b1c-1234567890ab";
+
 describe("parseId", () => {
-  it.each([
-    ["1", 1],
-    ["42", 42],
-    ["007", 7],
-    ["2147483647", 2147483647], // max Postgres int4
-  ])("parses %s", (raw, expected) => {
-    expect(parseId(raw)).toBe(expected);
+  it("accepts a UUID and lower-cases it", () => {
+    expect(parseId(ID)).toBe(ID);
+    expect(parseId(ID.toUpperCase())).toBe(ID);
+    expect(parseId("550e8400-e29b-41d4-a716-446655440000")).not.toBeNull(); // v4
   });
 
   it.each([
-    "0",
-    "-1",
-    "1.5",
-    "1e3",
+    "1",
     "abc",
-    "12abc",
     "",
-    " 1",
-    "2147483648", // overflows int4
-    "99999999999999999999",
+    ` ${ID}`,
+    ID.slice(0, -1),
+    ID.replace(/-/g, ""),
+    "0190f3a8-7c4e-0d2a-9b1c-1234567890ab", // version 0
+    "0190f3a8-7c4e-7d2a-cb1c-1234567890ab", // bad variant
+    42,
+    null,
   ])("returns null for %j", (raw) => {
     expect(parseId(raw)).toBeNull();
+  });
+});
+
+describe("parseDate", () => {
+  it("parses an ISO timestamp", () => {
+    expect(parseDate("2026-11-21T10:00:00.000Z")).toEqual(
+      new Date("2026-11-21T10:00:00.000Z"),
+    );
+  });
+
+  it.each([undefined, null, "", "yesterday", 123])(
+    "returns null for %j",
+    (raw) => {
+      expect(parseDate(raw)).toBeNull();
+    },
+  );
+});
+
+describe("sync cursor", () => {
+  it("round-trips through an opaque token", () => {
+    const cursor = { updatedAt: new Date("2026-11-21T10:00:00.123Z"), id: ID };
+    const token = encodeCursor(cursor);
+    expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(decodeCursor(token)).toEqual(cursor);
+  });
+
+  it.each([
+    "garbage",
+    Buffer.from("{}").toString("base64url"),
+    Buffer.from(JSON.stringify({ u: "nope", i: ID })).toString("base64url"),
+    Buffer.from(
+      JSON.stringify({ u: new Date().toISOString(), i: "1" }),
+    ).toString("base64url"),
+  ])("rejects %j", (token) => {
+    expect(decodeCursor(token)).toBeNull();
+  });
+});
+
+describe("validatePushChange", () => {
+  const base = "2026-11-21T10:00:00.000Z";
+
+  it("accepts an upsert, defaulting content to null", () => {
+    expect(validatePushChange({ op: "upsert", id: ID, title: " Hi " })).toEqual(
+      {
+        ok: true,
+        id: ID,
+        data: {
+          op: "upsert",
+          id: ID,
+          title: "Hi",
+          content: null,
+          baseUpdatedAt: null,
+        },
+      },
+    );
+  });
+
+  it("accepts a delete with a base version", () => {
+    expect(
+      validatePushChange({ op: "delete", id: ID, baseUpdatedAt: base }),
+    ).toEqual({
+      ok: true,
+      id: ID,
+      data: { op: "delete", id: ID, baseUpdatedAt: new Date(base) },
+    });
+  });
+
+  it("collects every field error", () => {
+    expect(
+      validatePushChange({
+        op: "upsert",
+        id: "1",
+        title: "",
+        baseUpdatedAt: "x",
+      }),
+    ).toEqual({
+      ok: false,
+      id: null,
+      errors: {
+        id: "id must be a UUID",
+        title: "Title must be a non-empty string",
+        baseUpdatedAt: "baseUpdatedAt must be an ISO-8601 timestamp",
+      },
+    });
+  });
+
+  it("rejects an unknown op but keeps the id for the result", () => {
+    expect(validatePushChange({ op: "patch", id: ID })).toEqual({
+      ok: false,
+      id: ID,
+      errors: { op: 'op must be "upsert" or "delete"' },
+    });
+  });
+
+  it.each([null, "x", [1]])("rejects a non-object change %j", (raw) => {
+    expect(validatePushChange(raw)).toEqual({
+      ok: false,
+      id: null,
+      errors: { change: "Change must be an object" },
+    });
   });
 });
 

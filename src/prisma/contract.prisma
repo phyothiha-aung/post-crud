@@ -1,11 +1,14 @@
 // use prisma-8
 
 model Post {
-  id        Int                @id @default(autoincrement())
+  id        String   @id @onCreate(uuid(7))
   title     String
   content   String?
 
   createdAt DateTime           @default(now()) @onCreate(now())
   updatedAt temporal.UpdatedAt
+  deletedAt DateTime?
+
+  @@index([updatedAt])
   @@map("posts")
 }

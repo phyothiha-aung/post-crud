@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5369806cca1a57f4c4f54364168f7551958a066459d84e89a6411d49a5d2c3a2'>;
+  StorageHashBase<'65e00ea44610816a146b6ca11b7575cc18ba7bf2d6040bdf496fdc0dc794036e'>;
 export type ExecutionHash =
-  ExecutionHashBase<'536b6cdd9bc03b68dc0448d33b2ee07caad6a6f86ea0e2a9526400cef3e1379c'>;
+  ExecutionHashBase<'41d72e22de30e5ec982662560f22e06c4b32e8a30c9d7f9763b5387fae59e0fd'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -312,6 +312,7 @@ export namespace Models {
   export type public_Post = {
     content: FieldOutputTypes['public']['Post']['content'];
     createdAt: FieldOutputTypes['public']['Post']['createdAt'];
+    deletedAt: FieldOutputTypes['public']['Post']['deletedAt'];
     id: FieldOutputTypes['public']['Post']['id'];
     title: FieldOutputTypes['public']['Post']['title'];
     updatedAt: FieldOutputTypes['public']['Post']['updatedAt'];
@@ -359,14 +360,17 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly deletedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
                 readonly id: {
-                  readonly dataType: 'pg/int4';
-                  readonly codecId: 'pg/int4@1';
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'function';
-                    readonly expression: 'autoincrement()';
-                  };
                   readonly many: false;
                 };
                 readonly title: {
@@ -385,7 +389,14 @@ type ContractBase = Omit<
               };
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
-              indexes: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'posts_updatedAt_idx_8c508b31';
+                  readonly prefix: 'posts_updatedAt_idx';
+                  readonly columns: readonly ['updatedAt'];
+                  readonly unique: false;
+                },
+              ];
               foreignKeys: readonly [];
             };
           };
@@ -419,9 +430,17 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
               readonly id: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly title: {
                 readonly nullable: false;
@@ -443,6 +462,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly content: { readonly column: 'content' };
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly deletedAt: { readonly column: 'deletedAt' };
                 readonly id: { readonly column: 'id' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
@@ -495,6 +515,14 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'posts';
             readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'posts';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

@@ -21,11 +21,12 @@ import { test as base, expect, type APIRequestContext } from "@playwright/test";
 
 /** The shape our API returns for one post (see src/app/api/posts). */
 export type Post = {
-  id: number;
+  id: string;
   title: string;
   content: string | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 };
 
 /**

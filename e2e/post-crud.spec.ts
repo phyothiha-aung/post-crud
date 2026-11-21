@@ -21,8 +21,8 @@
  */
 import { expect, test } from "./fixtures";
 
-// The largest id Postgres `int4` can hold: a valid id that will never exist.
-const MISSING_ID = 2147483647;
+// A well-formed UUID that will never exist.
+const MISSING_ID = "00000000-0000-7000-8000-000000000000";
 
 // `test.describe` just groups tests. The name shows up in the report.
 test.describe("creating a post", () => {
@@ -59,7 +59,7 @@ test.describe("creating a post", () => {
     await page.getByRole("button", { name: "Create post" }).click();
 
     // We land on /posts/<new id>. A regex matches any id.
-    await expect(page).toHaveURL(/\/posts\/\d+$/);
+    await expect(page).toHaveURL(/\/posts\/[0-9a-f-]{36}$/);
     await expect(
       page.getByRole("heading", { name: "My first e2e post" }),
     ).toBeVisible();
@@ -130,7 +130,7 @@ test.describe("viewing a post", () => {
 
   // `for` + `test` makes one test per case. They show up separately in the
   // report, so you can see exactly which input failed.
-  for (const id of [String(MISSING_ID), "abc"]) {
+  for (const id of [MISSING_ID, "abc"]) {
     test(`shows "Post not found." for /posts/${id}`, async ({ page }) => {
       await page.goto(`/posts/${id}`);
       await expect(page.getByText("Post not found.")).toBeVisible();

@@ -11,11 +11,12 @@ import {
 } from "@/lib/api";
 
 const post: Post = {
-  id: 1,
+  id: "1",
   title: "Hello",
   content: "World",
   createdAt: "2026-11-20T10:00:00.000Z",
   updatedAt: "2026-11-20T10:00:00.000Z",
+  deletedAt: null,
 };
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -101,7 +102,7 @@ describe("updatePost", () => {
     fetchMock.mockResolvedValue(json({ data: post }));
     const input = { title: "Changed", content: "Body" };
 
-    await expect(updatePost(7, input)).resolves.toEqual(post);
+    await expect(updatePost("7", input)).resolves.toEqual(post);
 
     const { url, init } = lastCall();
     expect(url).toBe("/api/posts/7");
@@ -114,7 +115,7 @@ describe("deletePost", () => {
   it("sends DELETE and resolves undefined on 204", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
 
-    await expect(deletePost(3)).resolves.toBeUndefined();
+    await expect(deletePost("3")).resolves.toBeUndefined();
 
     const { url, init } = lastCall();
     expect(url).toBe("/api/posts/3");

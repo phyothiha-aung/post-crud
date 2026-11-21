@@ -1,9 +1,10 @@
 export type Post = {
-  id: number;
+  id: string;
   title: string;
   content: string | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 };
 
 export type PostList = {
@@ -69,13 +70,13 @@ export const createPost = (input: PostInput) =>
     body: JSON.stringify(input),
   }).then((r) => r.data);
 
-export const updatePost = (id: number, input: PostInput) =>
+export const updatePost = (id: string, input: PostInput) =>
   request<{ data: Post }>(`/api/posts/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   }).then((r) => r.data);
 
-export const deletePost = (id: number) =>
+export const deletePost = (id: string) =>
   request<void>(`/api/posts/${id}`, { method: "DELETE" });
 
 export const formatDate = (iso: string) =>

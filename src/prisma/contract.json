@@ -32,10 +32,20 @@
                   }
                 }
               },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -65,6 +75,9 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "deletedAt": {
+                  "column": "deletedAt"
                 },
                 "id": {
                   "column": "id"
@@ -108,13 +121,17 @@
                     "precision": 3
                   }
                 },
+                "deletedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
                 "id": {
-                  "codecId": "pg/int4@1",
-                  "dataType": "pg/int4",
-                  "default": {
-                    "expression": "autoincrement()",
-                    "kind": "function"
-                  },
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "nullable": false
                 },
                 "title": {
@@ -132,7 +149,16 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "updatedAt"
+                  ],
+                  "name": "posts_updatedAt_idx_8c508b31",
+                  "prefix": "posts_updatedAt_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -146,10 +172,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5369806cca1a57f4c4f54364168f7551958a066459d84e89a6411d49a5d2c3a2"
+    "storageHash": "65e00ea44610816a146b6ca11b7575cc18ba7bf2d6040bdf496fdc0dc794036e"
   },
   "execution": {
-    "executionHash": "536b6cdd9bc03b68dc0448d33b2ee07caad6a6f86ea0e2a9526400cef3e1379c",
+    "executionHash": "41d72e22de30e5ec982662560f22e06c4b32e8a30c9d7f9763b5387fae59e0fd",
     "mutations": {
       "defaults": [
         {
@@ -163,6 +189,17 @@
           "ref": {
             "entry": "posts",
             "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "posts",
+            "field": "id",
             "namespace": "public"
           }
         },

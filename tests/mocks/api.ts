@@ -9,14 +9,16 @@ import type { Post } from "@/lib/api";
 export const store = { posts: [] as Post[], nextId: 1 };
 
 export function makePost(overrides: Partial<Post> = {}): Post {
-  const id = overrides.id ?? store.nextId++;
-  const createdAt = new Date(Date.UTC(2026, 0, 1) + id * 60_000).toISOString();
+  const id = overrides.id ?? String(store.nextId++);
+  const seq = Number(id) || 0;
+  const createdAt = new Date(Date.UTC(2026, 0, 1) + seq * 60_000).toISOString();
   return {
     id,
     title: `Post ${id}`,
     content: `Content ${id}`,
     createdAt,
     updatedAt: createdAt,
+    deletedAt: null,
     ...overrides,
   };
 }
@@ -32,7 +34,7 @@ export function seed(postsOrCount: Partial<Post>[] | number): Post[] {
   return created;
 }
 
-const find = (id: string) => store.posts.find((p) => p.id === Number(id));
+const find = (id: string) => store.posts.find((p) => p.id === id);
 const notFound = () =>
   HttpResponse.json({ message: "Post not found" }, { status: 404 });
 

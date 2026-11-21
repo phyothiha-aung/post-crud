@@ -24,7 +24,7 @@ export function PostList() {
   const [query, setQuery] = useState(search);
   const [reloads, setReloads] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const navigate = (next: { page: number; search?: string }) => {
     const qs = new URLSearchParams();
@@ -56,7 +56,7 @@ export function PostList() {
   const loading = result?.key !== key;
   const list = result?.list;
 
-  const onDelete = async (id: number, title: string) => {
+  const onDelete = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This can't be undone.`)) return;
     setDeletingId(id);
     try {

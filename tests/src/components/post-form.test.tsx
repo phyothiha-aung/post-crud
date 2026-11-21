@@ -212,7 +212,7 @@ describe("PostForm (edit)", () => {
   });
 
   it("shows an error when the post no longer exists", async () => {
-    const post = makePost({ id: 99 });
+    const post = makePost({ id: "99" });
     render(<PostForm post={post} />);
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
     expect(await screen.findByText("Post not found")).toBeInTheDocument();
